@@ -9,4 +9,5 @@ env/
 *.csv
 *.pkl
 *.joblib
-data/
+data/*
+!data/*.dvc
