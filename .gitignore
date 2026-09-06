@@ -11,3 +11,6 @@ env/
 *.joblib
 data/*
 !data/*.dvc
+
+# Generated reports
+reports/
