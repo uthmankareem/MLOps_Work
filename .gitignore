@@ -14,3 +14,7 @@ data/*
 
 # Generated reports
 reports/
+
+# MLflow tracking store (local)
+mlflow.db
+mlruns/
