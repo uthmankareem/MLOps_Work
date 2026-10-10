@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Housing Price Predictor</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 620px; margin: 40px auto; }
+    label { display: block; margin-top: 10px; }
+    input { width: 100%; padding: 6px; box-sizing: border-box; }
+    button { margin-top: 16px; padding: 10px 18px; font-size: 16px; cursor: pointer; }
+    #result { margin-top: 20px; font-size: 22px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>California Housing Price Predictor</h1>
+  <p>Fill in a block's features and ask the containerized API for a price.</p>
+
+  <!-- The id values MUST match the HouseFeatures field names in serve_model.py,
+       because the JS builds the JSON body from these ids. -->
+  <label>Median income (MedInc, tens of thousands $) <input id="MedInc" value="8.5"></label>
+  <label>House age (years) <input id="HouseAge" value="30"></label>
+  <label>Avg rooms <input id="AveRooms" value="6.2"></label>
+  <label>Avg bedrooms <input id="AveBedrms" value="1.1"></label>
+  <label>Population <input id="Population" value="800"></label>
+  <label>Avg occupancy <input id="AveOccup" value="2.9"></label>
+  <label>Latitude <input id="Latitude" value="37.7"></label>
+  <label>Longitude <input id="Longitude" value="-122.2"></label>
+
+  <button onclick="predict()">Predict price</button>
+  <div id="result"></div>
+
+  <script>
+    // The browser runs on YOUR machine, OUTSIDE Docker's network, so it cannot
+    // use the internal service name "api" - that name only resolves for other
+    // CONTAINERS on the mlnet network. From the browser we must go through the
+    // published HOST port instead: 127.0.0.1:8000 is our api container's door.
+    async function predict() {
+      const result = document.getElementById("result");
+      result.textContent = "Asking the API...";
+      const body = {};
+      // Gather all 8 inputs into one JSON object, matching the API contract.
+      for (const id of ["MedInc","HouseAge","AveRooms","AveBedrms","Population","AveOccup","Latitude","Longitude"]) {
+        body[id] = parseFloat(document.getElementById(id).value);
+      }
+      // try/catch so a failure is SHOWN, not silently swallowed. (Our earlier
+      // version had no catch, which is why a wrong address looked like "nothing
+      // happened" instead of an error.)
+      try {
+        // fetch sends the request and returns a promise; await pauses THIS
+        // function until the API's answer arrives.
+        const res = await fetch("http://127.0.0.1:8000/predict", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          // price_100k is in units of $100k, so multiply by 100000 for dollars.
+          result.textContent = "Predicted price: $" + Math.round(data.price_100k * 100000).toLocaleString();
+        } else {
+          // e.g. 422 validation errors come back here with a reason.
+          result.textContent = "API error " + res.status + ": " + JSON.stringify(data);
+        }
+      } catch (err) {
+        // Network-level failure: wrong host/port, API container stopped, etc.
+        result.textContent = "Could not reach the API: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>

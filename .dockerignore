@@ -1,0 +1,17 @@
+# Stage 7 - "What NOT to pack" for the Docker build context.
+# docker build sends this whole folder to the builder; this list keeps out
+# megabytes that the image will never use, so builds stay fast and small.
+.venv            # the container builds its OWN Python env — never ship yours
+__pycache__      # compiled bytecode, regenerated automatically
+.mypy_cache      # type-checker caches
+mlruns           # MLflow run store (tracking belongs on the host, not the image)
+mlflow.db        # MLflow local database
+data             # raw dataset — the model is already baked into the image
+reports          # profiling reports — docs, not runtime
+*.log            # server logs from past runs
+.git             # git history — huge, useless inside a container
+.gitignore
+README.md        # markdown docs — not needed in the image
+SETUP-NOTES.md
+GIT-CHEATSHEET.md
+practice.txt

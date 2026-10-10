@@ -1,0 +1,12 @@
+# Runtime dependencies for the serving API ONLY (Stage 6 artifact).
+# This is the container's shopping list — the server's needs, trimmed to the minimum.
+# Every version is pinned to match the venv that TRAINED the model, so the
+# container is a twin of the training environment and predictions stay identical.
+fastapi==0.141.1     # the web framework that defines the API
+uvicorn==0.52.4      # the engine that listens on the port and runs the API
+pandas==2.3.3        # DataFrames: the model expects one, built in /predict
+numpy==2.3.5         # math backbone for pandas + scikit-learn
+scikit-learn==1.9.0  # the RandomForest + pipeline itself — must match training version
+scipy==1.16.3        # backend scikit-learn uses for heavy math
+joblib==1.6.0        # loads the saved model file
+pydantic==2.13.5     # validates incoming JSON (the HouseFeatures contract)

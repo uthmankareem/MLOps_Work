@@ -1,0 +1,30 @@
+# Stage 7 - Docker Compose: two services that cooperate on a private network.
+# Start the whole team:  docker compose up -d
+# Inspect:               docker compose ps  /  docker compose logs -f
+# Tear it all down:      docker compose down
+
+services:
+  # ---- Service 1: the model API (built from our own Dockerfile) ----
+  api:
+    build: .                  # build the image from ./Dockerfile
+    image: housing-api        # ...and tag it "housing-api"
+    ports:
+      - "8000:8000"           # host:container tunnel (same as `docker run -p`)
+    restart: unless-stopped   # come back automatically after a crash or reboot
+    networks: [mlnet]         # join the private network so the web page can find us
+
+  # ---- Service 2: a tiny web page (static files) that calls the API ----
+  web:
+    image: nginx:alpine       # off-the-shelf web server that serves static files
+    volumes:
+      - ./web:/usr/share/nginx/html:ro   # our web\ folder -> nginx's default html folder, read-only
+    ports:
+      - "8090:80"             # host 8090 -> container 80 (nginx's port).
+                              # NOT 8080: that host port is already taken by the
+                              # Airflow api-server container on this machine.
+    depends_on:
+      - api                   # start web after api (start ORDER, not health check)
+    networks: [mlnet]
+
+networks:
+  mlnet:                      # a private network shared by both services

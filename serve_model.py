@@ -3,6 +3,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  # allows a browser page to call this API
 from pydantic import BaseModel, Field
 
 # ---- Load the trained pipeline once, at startup ------------------------------
@@ -31,6 +32,18 @@ app = FastAPI(
     title="California Housing Price Predictor",
     description="Serves the trained RandomForest pipeline built in Stages 4-5.",
     version="1.0.0",
+)
+
+# CORS: browsers block a page from calling an API on a different address by
+# default. Our page lives on :8090 (8080 is taken by the Airflow stack) and the
+# API on :8000, so we must opt in. Both spellings are listed because "localhost"
+# and "127.0.0.1" are DIFFERENT origins to a browser, even though both mean
+# this machine.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8090", "http://127.0.0.1:8090"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
