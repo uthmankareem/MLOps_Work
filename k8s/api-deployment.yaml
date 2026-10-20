@@ -1,0 +1,41 @@
+# Stage 7 (Kubernetes half) - the API tier.
+# A Deployment is DESIRED STATE: "keep N copies of this pod alive, forever."
+# The controller compares this file to reality continuously and repairs drift.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+
+spec:
+  replicas: 1                    # how many identical pods should exist at all times
+  selector:
+    matchLabels:
+      app: housing-api           # "these are the pods I manage"
+  template:                      # the blueprint the controller stamps pods from
+    metadata:
+      labels:
+        app: housing-api         # MUST equal the selector above, or the pods are orphaned
+    spec:
+      containers:
+        - name: api
+          image: housing-api:latest
+          # A ":latest" tag normally makes Kubernetes try to PULL from a registry.
+          # IfNotPresent forces it to use the image already inside Docker Desktop.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000      # what the process listens on inside the pod
+
+          readinessProbe:              # "may I send you traffic yet?"
+            httpGet:
+              path: /                  # our health endpoint is "/" -> stage 6 lesson
+              port: 8000
+            initialDelaySeconds: 5     # the 137 MB model takes a moment to load
+            periodSeconds: 5
+
+          livenessProbe:               # "are you still alive? if not, restart the pod"
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
