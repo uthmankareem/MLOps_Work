@@ -1,4 +1,4 @@
-# Stage 8 - Continuous Integration: run the test suite on every push.
+# Stage 8 - Continuous Integration: run tests, then build the Docker image.
 # GitHub reads every *.yml in .github/workflows/ and runs it on the matching event.
 
 name: CI
@@ -7,6 +7,9 @@ on:
   push:
     branches: [ main ]
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -25,3 +28,21 @@ jobs:
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -t . -v
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test                    # only build if tests pass
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Create models directory
+        run: mkdir -p models
+
+      - name: Fetch model from GitHub Release
+        run: gh release download model-v1 --pattern 'housing_pipeline.joblib' --dir models
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t housing-api:ci .
